@@ -285,8 +285,25 @@ class BaseRegistrationForm(PageForm):
             # Skip this check if password fields already have an error
             if not 'password' in error_keys:
                 password = self.widgets['password'].getInputValue()
-                if password and len(password) < 5:
-                    err_str = _(u'Passwords must contain at least 5 letters.')
+
+                # Use PAS to test validity
+                pas_instance = self.acl_users
+                plugins = pas_instance._getOb('plugins')
+                validators = plugins.listPlugins(IValidationPlugin)
+                err = []
+                if len(validators) == 0:
+                    if password and len(password) < 5:
+                        err += [_(u'Passwords must contain at least 5 letters.')]
+                for validator_id, validator in validators:
+                    user = None
+                    set_id = ''
+                    set_info = {'password':password}
+                    errors = validator.validateUserInfo( user, set_id, set_info )
+                    err += [info['error'] for info in errors if info['id'] == 'password' ]
+                if err:
+                    # assume PAS plugin will i18n the error
+                    err_str = ' '.join(err)
+                    #err_str = _(u'Passwords must contain at least 5 letters.')
                     errors.append(WidgetInputError(
                             'password', u'label_password', err_str))
                     self.widgets['password'].error = err_str

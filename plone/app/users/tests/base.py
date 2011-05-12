@@ -13,6 +13,13 @@ from Products.CMFPlone.tests.utils import MockMailHost
 from Products.MailHost.interfaces import IMailHost
 from Products.CMFCore.utils import getToolByName
 
+from AccessControl.SecurityInfo import ClassSecurityInfo
+from OFS.Cache import Cacheable
+from Products.PluggableAuthService.interfaces.plugins import IValidationPlugin
+from Products.PluggableAuthService.plugins.BasePlugin import BasePlugin
+from Products.PluggableAuthService.utils import classImplements
+
+
 # BBB Zope 2.12
 try:
     from Testing.testbrowser import Browser
@@ -36,11 +43,16 @@ class TestCase(FunctionalTestCase):
         sm.unregisterUtility(provided=IMailHost)
         sm.registerUtility(mailhost, provided=IMailHost)
 
+        obj = TestPasswordStrength('test')
+        #self.portal.acl_users._setObject(obj.getId(), obj)
+
+
     def beforeTearDown(self):
         self.portal.MailHost = self.portal._original_MailHost
         sm = getSiteManager(context=self.portal)
         sm.unregisterUtility(provided=IMailHost)
         sm.registerUtility(aq_base(self.portal._original_MailHost), provided=IMailHost)
+        #self.portal.acl_users.manage_delObjects('test')
 
 
     def setMailHost(self):
@@ -51,3 +63,28 @@ class TestCase(FunctionalTestCase):
         self.portal.MailHost.smtp_host = ''
         setattr(self.portal, 'email_from_address', '')
 
+# Dummy password validation PAS plugin
+
+
+class TestPasswordStrength(BasePlugin, Cacheable):
+    meta_type = 'Test Password Strength Plugin'
+    security = ClassSecurityInfo()
+
+    def __init__(self, id, title=None):
+        self._id = self.id = id
+        self.title = title
+
+    security.declarePrivate('validateUserInfo')
+    def validateUserInfo(self, user, set_id, set_info ):
+
+        errors = []
+
+        if set_info and set_info.get('password', None):
+            password = set_info['password']
+
+            errors = [{'id':'password','error':'Must be not be dead'}]
+        return errors
+
+
+classImplements(TestPasswordStrength,
+                IValidationPlugin)
