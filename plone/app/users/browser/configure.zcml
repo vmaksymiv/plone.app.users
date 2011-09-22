@@ -6,6 +6,13 @@
 
     <!-- Join form definition -->
     <browser:page
+      name="new-register"
+      for="plone.app.layout.navigation.interfaces.INavigationRoot"
+      class=".register.NewRegistrationForm"
+      permission="cmf.AddPortalMember"
+      />
+
+    <browser:page
       name="register"
       for="plone.app.layout.navigation.interfaces.INavigationRoot"
       class=".register.RegistrationForm"

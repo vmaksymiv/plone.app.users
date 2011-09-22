@@ -11,6 +11,8 @@ from Products.CMFDefault.exceptions import EmailAddressInvalid
 from Products.CMFDefault.formlib.schema import FileUpload
 from Products.CMFPlone import PloneMessageFactory as _
 
+# XXX z3c.form additions, merge with imports above and clean up
+from plone.namedfile.field import NamedBlobImage
 
 class IUserDataSchemaProvider(Interface):
     """
@@ -112,7 +114,7 @@ class IUserDataSchema(Interface):
                       "your office is located."),
         required=False)
 
-    portrait = FileUpload(title=_(u'label_portrait', default=u'Portrait'),
+    portrait = NamedBlobImage(title=_(u'label_portrait', default=u'Portrait'),
         description=_(u'help_portrait',
                       default=u'To add or change the portrait: click the '
                       '"Browse" button; select a picture of yourself. '
@@ -122,5 +124,10 @@ class IUserDataSchema(Interface):
 
     pdelete = schema.Bool(
         title=_(u'label_delete_portrait', default=u'Delete Portrait'),
+        description=u'',
+        required=False)
+
+    _authenticator = schema.TextLine(
+        title=u'CSRF protection token',
         description=u'',
         required=False)

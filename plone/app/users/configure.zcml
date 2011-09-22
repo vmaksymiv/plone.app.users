@@ -5,6 +5,7 @@
     i18n_domain="plone.app.users">
 
     <include package="plone.app.controlpanel" />
+    <include package="plone.app.z3cform" />
 
     <utility provides=".userdataschema.IUserDataSchemaProvider"
              factory=".userdataschema.UserDataSchemaProvider"/>

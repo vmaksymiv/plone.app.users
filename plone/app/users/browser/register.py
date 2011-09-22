@@ -4,7 +4,7 @@ from zope.schema import getFieldNamesInOrder
 
 from five.formlib.formbase import PageForm
 from zope import schema
-from zope.formlib import form
+from zope import formlib
 from zope.app.form.browser import CheckBoxWidget, ASCIIWidget
 from zope.app.form.interfaces import WidgetInputError, InputErrors
 from zope.component import getMultiAdapter
@@ -32,6 +32,10 @@ from zope.site.hooks import getSite
 from plone.protect import CheckAuthenticator
 
 import logging
+
+# XXX z3c.form additions, merge with imports above and clean up
+from z3c.form import field, button, form, interfaces
+from plone.app.users.userdataschema import IUserDataSchema
 
 # Define constants from the Join schema that should be added to the
 # vocab of the join fields setting in usergroupssettings controlpanel.
@@ -173,6 +177,45 @@ def getGroupIds(context):
     return SimpleVocabulary(terms)
 
 
+class NewRegistrationForm(form.Form):
+
+    """Join form: An anonymous user registers as a member """
+    
+    fields = field.Fields(IUserDataSchema)
+
+    def __init__(self, *args, **kwargs):
+        super(NewRegistrationForm, self).__init__(*args, **kwargs)
+        portal_props = getToolByName(self.context, 'portal_properties')
+        props = portal_props.site_properties
+        self.use_email_as_login = props.getProperty('use_email_as_login')
+        registration_fields = list(props.getProperty(
+                'user_registration_fields', []))
+
+    def updateWidgets(self):
+        super(NewRegistrationForm, self).updateWidgets()
+        # XXX set authentcation token here
+        self.widgets['_authenticator'].value = 'some_token_string'
+        # Make _authenticator a hidden field
+        self.widgets['_authenticator'].mode = interfaces.HIDDEN_MODE
+
+    @button.buttonAndHandler(u'Submit')
+    def handleApply(self, action):
+        data, errors = self.extractData()
+
+        # check for _authenticator
+        if not self.checkCSRFAuthenticator(): 
+            return 
+
+    def checkCSRFAuthenticator(self):
+        try:
+            CheckAuthenticator(self.request)
+            self.status = "Suk6"
+            return True
+        except:
+            self.status = "CSRF protection token check failed"
+            return False
+        
+
 class BaseRegistrationForm(PageForm):
     label = u""
     description = u""
@@ -222,7 +265,7 @@ class BaseRegistrationForm(PageForm):
         util = getUtility(IUserDataSchemaProvider)
         schema = util.getSchema()
 
-        all_fields = form.Fields(schema) + form.Fields(IRegisterSchema)
+        all_fields = formlib.form.Fields(schema) + formlib.form.Fields(IRegisterSchema)
 
         if use_email_as_login:
             all_fields['email'].custom_widget = EmailAsLoginWidget
@@ -236,7 +279,7 @@ class BaseRegistrationForm(PageForm):
 
         # Pass the list of join form fields as a reference to the
         # Fields constructor, and return.
-        return form.Fields(*[all_fields[id] for id in registration_fields])
+        return formlib.form.Fields(*[all_fields[id] for id in registration_fields])
 
     # Actions validators
     def validate_registration(self, action, data):
@@ -354,7 +397,7 @@ class BaseRegistrationForm(PageForm):
                 self.widgets['mail_me'].error = err_str
         return errors
 
-    @form.action(_(u'label_register', default=u'Register'),
+    @formlib.form.action(_(u'label_register', default=u'Register'),
                  validator='validate_registration', name=u'register')
     def action_join(self, action, data):
         self.handle_join_success(data)
@@ -528,13 +571,13 @@ class AddUserForm(BaseRegistrationForm):
                 defaultFields['mail_me'].field.default = False
 
         # Append the manager-focused fields
-        allFields = defaultFields + form.Fields(IAddUserSchema)
+        allFields = defaultFields + formlib.form.Fields(IAddUserSchema)
 
         allFields['groups'].custom_widget = MultiCheckBoxVocabularyWidget
 
         return allFields
 
-    @form.action(_(u'label_register', default=u'Register'),
+    @formlib.form.action(_(u'label_register', default=u'Register'),
                  validator='validate_registration', name=u'register')
     def action_join(self, action, data):
         super(AddUserForm, self).handle_join_success(data)

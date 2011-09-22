@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-version = '1.1.3dev'
+version = '2.0a1dev'
 
 setup(name='plone.app.users',
       version=version,
@@ -32,13 +32,10 @@ setup(name='plone.app.users',
       ),
       install_requires=[
           'setuptools',
-          'five.formlib',
           'plone.protect',
-          'plone.app.controlpanel >=2.1b1',
           'plone.app.layout',
           'zope.app.form',
           'zope.component',
-          'zope.formlib',
           'zope.i18nmessageid',
           'zope.interface',
           'zope.schema',
@@ -49,6 +46,9 @@ setup(name='plone.app.users',
           'Products.statusmessages',
           'Zope2 >= 2.12.3',
           'ZODB3',
+          'plone.app.z3cform',
+          'plone.namedfile[blobs]',
+          'plone.formwidget.namedfile',
       ],
       entry_points="""
       [z3c.autoinclude.plugin]
